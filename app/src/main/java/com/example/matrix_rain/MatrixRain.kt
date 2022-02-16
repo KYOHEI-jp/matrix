@@ -3,27 +3,59 @@ package com.example.matrix_rain.ui.theme
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.delay
-import org.w3c.dom.Text
+import kotlin.random.Random
 
 private val characters = listOf(
     "ジ",
     "ェ",
+    "Z",
+    "A",
+    "R",
+    "左",
+    "右",
+    "Q",
+    "ッ",
+    "テ",
     "ッ",
     "ト",
     "パ",
     "Z",
     "A",
     "R",
+    "天",
+    "上",
     "Q",
     "ッ",
     "ク",
     "構",
     "成",
+    "K",
+    "ト",
+    "パ",
+    "Z",
+    "尾",
+    "携",
+    "天",
+    "げ",
+    "ぺ",
+    "L",
+    "R",
+    "手",
+    "構",
+    "成",
     "I",
+    "L",
     "L",
     "N",
     "K",
@@ -34,49 +66,103 @@ private val characters = listOf(
 )
 
 @Composable
-fun MatrixRain() {
-    MatrixColumn(1000)
-}
-
-@Composable
-fun MatrixColumn(crawlSpeed: Long) {
-
-    val matrixStrip = remember {
-        Array(20) {
-            characters.random()
-        }
-    }
-
-    var lettersToDraw by remember { mutableStateOf(0) }
-
-    repeat(lettersToDraw) {
-        MatrixChar(char = matrixStrip[it], crawlSpeed = 1000)
-    }
-
-    LaunchedEffect(Unit) {
-        while (lettersToDraw < matrixStrip.size) {
-            lettersToDraw += 1
+fun MatrixText(
+    stripCount: Int = 20,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.background(Color.Black)
+    ) {
+        for (column in 0..stripCount) {
+            MatrixColumn(
+                Random.nextInt(8) * 1000L,
+                (Random.nextInt(10) * 10L) + 100
+            )
         }
     }
 }
 
+@Composable
+fun RowScope.MatrixColumn(
+    yStartDelay: Long,
+    crawlSpeed: Long
+) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxHeight()
+            .weight(1f)
+    ) {
+        val pxWidth = with(LocalDensity.current) { maxWidth.toPx() }
+        val pxHeight = with(LocalDensity.current) { maxHeight.toPx() }
+
+        val matrixStrip =
+            remember { Array((pxHeight / pxWidth).toInt() + 1) { characters.random() } }
+        val lettersToDraw = remember { mutableStateOf(0) }
+
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            for (row in 0 until lettersToDraw.value) {
+                MatrixChar(
+                    textSizePx = pxWidth,
+                    char = matrixStrip[row],
+                    crawlSpeed
+                ) {
+                    // When the 60% of chars have faded restart the loop
+                    if (row >= (matrixStrip.size * 0.6).toInt()) {
+                        lettersToDraw.value = 0
+                    }
+                }
+            }
+        }
+
+        LaunchedEffect(key1 = yStartDelay) {
+            delay(yStartDelay)
+            while (true) {
+                if (lettersToDraw.value <= matrixStrip.size - 1) {
+                    lettersToDraw.value += 1
+                }
+                if (lettersToDraw.value > matrixStrip.size * 0.5) {
+                    // If we've drawn over half the strip, we can randomly change letters.
+                    matrixStrip[Random.nextInt(lettersToDraw.value)] = characters.random()
+                }
+                delay(crawlSpeed)
+            }
+        }
+    }
+}
+
 
 @Composable
-fun MatrixChar(char: String, crawlSpeed: Long) {
-    var textColor by remember { mutableStateOf(Color(0xffcefbe4)) }
-    var startFade by remember { mutableStateOf(false) }
+fun MatrixChar(
+    textSizePx: Float,
+    char: String,
+    crawlSpeed: Long,
+    onFinished: () -> Unit
+) {
+    val startFade = remember { mutableStateOf(false) }
+    val textSizeSp = with(LocalDensity.current) { textSizePx.toSp() }
+    val textColor = remember { mutableStateOf(Color(0xffcefbe4)) }
     val alpha = animateFloatAsState(
-        targetValue = if (startFade) 0f else 1f,
+        targetValue = if (startFade.value) 0f else 1f,
         animationSpec = tween(
-            durationMillis = 4000,
-            easing = LinearEasing
-        )
+            durationMillis = 4000, // animation duration
+            easing = LinearEasing // animation easing
+        ),
+        finishedListener = {
+            onFinished()
+        }
     )
-    Text(text = char, color = textColor.copy(alpha = alpha.value))
+
+    Text(
+        text = char,
+        fontSize = textSizeSp,
+        color = textColor.value.copy(alpha = alpha.value),
+    )
 
     LaunchedEffect(Unit) {
         delay(crawlSpeed)
-        textColor = Color(0xffcefbe4)
-        startFade = true
+        textColor.value = Color(0xff43c728)
+        startFade.value = true
     }
 }
