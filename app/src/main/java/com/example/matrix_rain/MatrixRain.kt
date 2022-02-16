@@ -9,10 +9,57 @@ import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
 import org.w3c.dom.Text
 
+private val characters = listOf(
+    "ジ",
+    "ェ",
+    "ッ",
+    "ト",
+    "パ",
+    "Z",
+    "A",
+    "R",
+    "Q",
+    "ッ",
+    "ク",
+    "構",
+    "成",
+    "I",
+    "L",
+    "N",
+    "K",
+    "8",
+    "7",
+    "C",
+    "6"
+)
+
 @Composable
 fun MatrixRain() {
-    MatrixChar(char = characters[5])
+    MatrixColumn(1000)
 }
+
+@Composable
+fun MatrixColumn(crawlSpeed: Long) {
+
+    val matrixStrip = remember {
+        Array(20) {
+            characters.random()
+        }
+    }
+
+    var lettersToDraw by remember { mutableStateOf(0) }
+
+    repeat(lettersToDraw) {
+        MatrixChar(char = matrixStrip[it], crawlSpeed = 1000)
+    }
+
+    LaunchedEffect(Unit) {
+        while (lettersToDraw < matrixStrip.size) {
+            lettersToDraw += 1
+        }
+    }
+}
+
 
 @Composable
 fun MatrixChar(char: String, crawlSpeed: Long) {
@@ -25,10 +72,10 @@ fun MatrixChar(char: String, crawlSpeed: Long) {
             easing = LinearEasing
         )
     )
-    Text(text = char, color = textColor.copy(alpha = alpha))
+    Text(text = char, color = textColor.copy(alpha = alpha.value))
 
     LaunchedEffect(Unit) {
-        delay()
+        delay(crawlSpeed)
         textColor = Color(0xffcefbe4)
         startFade = true
     }
